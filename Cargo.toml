@@ -4,5 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy = "0.15"
-rand = "0.8.5"
+bevy = "0.16.1"
+rand = "0.9.1"
+
+[patch.crates-io]
+objc2 = { git = "https://github.com/madsmtm/objc2", branch = "master" }
+objc2-foundation = { git = "https://github.com/madsmtm/objc2", branch = "master" }
+objc2-app-kit = { git = "https://github.com/madsmtm/objc2", branch = "master" }

@@ -84,21 +84,19 @@ fn setup_camera(mut commands: Commands) {
 fn setup_game(mut commands: Commands) {
     // Spawn player
     commands.spawn((
-        SpriteBundle {
-            sprite: Sprite {
-                color: Color::srgb(0.2, 0.4, 0.8), // Use srgb for colors
-                ..default()
-            },
-            transform: Transform {
-                translation: Vec3::new(0.0, -250.0, 0.0),
-                scale: PLAYER_SIZE.extend(1.0),
-                ..default()
-            },
-            ..default()
-        },
-        Player,
-        Velocity(Vec2::ZERO),
-    ));
+    Sprite {
+        color: Color::srgb(0.2, 0.4, 0.8),
+        ..default()
+    },
+    Transform {
+        translation: Vec3::new(0.0, -250.0, 0.0),
+        scale: PLAYER_SIZE.extend(1.0),
+        ..default()
+    },
+    Visibility::Visible,
+    Player,
+    Velocity(Vec2::ZERO),
+));
 }
 
 /// System to handle player input for movement
@@ -106,7 +104,7 @@ fn player_movement(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut query: Query<&mut Velocity, With<Player>>,
 ) {
-    if let Ok(mut player_velocity) = query.get_single_mut() {
+    if let Ok(mut player_velocity) = query.single_mut() {
         let mut direction = Vec2::ZERO;
 
         if keyboard_input.pressed(KeyCode::ArrowLeft) {
@@ -127,7 +125,7 @@ fn move_entities(
     mut query: Query<(&mut Transform, &Velocity, Option<&Player>)>,
     window_query: Query<&Window>,
 ) {
-    let window = window_query.single();
+    let window = window_query.single().expect("Window not found");
     let half_player_width = PLAYER_SIZE.x / 2.0;
     let x_min = -window.width() / 2.0 + half_player_width;
     let x_max = window.width() / 2.0 - half_player_width;
@@ -155,27 +153,25 @@ fn enemy_spawner(
 
     // If the timer just finished, spawn an enemy
     if spawn_timer.0.just_finished() {
-        let window = window_query.single();
+        let window = window_query.single().expect("Window not found");
         let half_enemy_width = ENEMY_SIZE.x / 2.0;
         let x_spawn_range =
             -window.width() / 2.0 + half_enemy_width..window.width() / 2.0 - half_enemy_width;
         let y_spawn_pos = window.height() / 2.0;
 
-        let mut rng = rand::thread_rng();
-
+        let mut rng = rand::rng();
+        let x_spawn = rng.random_range(x_spawn_range);
         commands.spawn((
-            SpriteBundle {
-                sprite: Sprite {
-                    color: Color::srgb(0.9, 0.2, 0.2), // Use srgb for colors
-                    ..default()
-                },
-                transform: Transform {
-                    translation: Vec3::new(rng.gen_range(x_spawn_range), y_spawn_pos, 0.0),
-                    scale: ENEMY_SIZE.extend(1.0),
-                    ..default()
-                },
+            Sprite {
+                color: Color::srgb(0.9, 0.2, 0.2),
                 ..default()
             },
+            Transform {
+                translation: Vec3::new(x_spawn, y_spawn_pos, 0.0),
+                scale: ENEMY_SIZE.extend(1.0),
+                ..default()
+            },
+            Visibility::Visible,
             Enemy,
             Velocity(Vec2::new(0.0, -ENEMY_SPEED)),
         ));
@@ -189,7 +185,7 @@ fn check_collisions(
     enemy_query: Query<&Transform, With<Enemy>>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
-    if let Ok((player_transform, player_entity)) = player_query.get_single() {
+    if let Ok((player_transform, player_entity)) = player_query.single() {
         for enemy_transform in &enemy_query {
             if collide(
                 player_transform.translation,
@@ -233,6 +229,6 @@ fn despawn_all_entities(
     query: Query<Entity, Or<(With<Enemy>, With<Text>)>>,
 ) {
     for entity in &query {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
